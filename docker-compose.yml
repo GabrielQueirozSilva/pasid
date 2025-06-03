@@ -1,0 +1,57 @@
+services:
+  source:
+    build:
+      context: ./src/source
+    container_name: source
+    depends_on:
+      - lb1
+    ports:
+      - "5000:5000"
+    networks:
+      - pasidnet
+
+  lb1:
+    build:
+      context: ./src/load_balancer1
+    container_name: lb1
+    ports:
+      - "5101:5101"
+    depends_on:
+      - service2_1
+      - service2_2
+    networks:
+      - pasidnet
+
+  lb2:
+    build:
+      context: ./src/load_balancer2
+    container_name: lb2
+    ports:
+      - "5201:5201"
+    depends_on:
+      - service2_1
+      - service2_2
+    networks:
+      - pasidnet
+
+  service2_1:
+    build:
+      context: ./src/service2_1
+    container_name: service2_1
+    ports:
+      - "5301:5301"
+    networks:
+      - pasidnet
+
+  service2_2:
+    build:
+      context: ./src/service2_2
+    container_name: service2_2
+    ports:
+      - "5302:5302"
+    networks:
+      - pasidnet
+
+networks:
+  pasidnet:
+    driver: bridge

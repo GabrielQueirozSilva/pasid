@@ -14,25 +14,33 @@ model = BertForSequenceClassification.from_pretrained("nlptown/bert-base-multili
 model.to(device)
 model.eval()
 
+# Endpoint de health check
+@app.route("/health", methods=["GET"])
+def health():
+    return "OK", 200
+
 @app.route("/process", methods=["POST"])
 def process():
     texto = request.json.get("texto", "This is a test sentence.")
+    t1 = float(request.json.get("t1", time.time()))
+    t3 = time.time()  
 
-    start_time = time.time()
-
-    # Tokeniza e envia para o device
+   
     inputs = tokenizer(texto, return_tensors="pt", padding=True, truncation=True, max_length=512)
     inputs = {k: v.to(device) for k, v in inputs.items()}
 
-    # Inferência sem gradientes
     with torch.no_grad():
         outputs = model(**inputs)
 
-    elapsed = time.time() - start_time
+    t4 = time.time()  # Após inferência
+    t5 = time.time()  # Pronto para resposta
 
     return jsonify({
+        "t1": t1,
+        "t3": t3,
+        "t4": t4,
+        "t5": t5,
         "status": "success",
-        "elapsed_time": elapsed,
         "logits": outputs.logits.tolist()
     })
 

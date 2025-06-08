@@ -1,39 +1,4 @@
 services:
-  source:
-    build:
-      context: ./src/source
-    container_name: source
-    depends_on:
-      - lb1
-    ports:
-      - "5000:5000"
-    networks:
-      - pasidnet
-
-  lb1:
-    build:
-      context: ./src/load_balancer1
-    container_name: lb1
-    ports:
-      - "5101:5101"
-    depends_on:
-      - service2_1
-      - service2_2
-    networks:
-      - pasidnet
-
-  lb2:
-    build:
-      context: ./src/load_balancer2
-    container_name: lb2
-    ports:
-      - "5201:5201"
-    depends_on:
-      - service2_1
-      - service2_2
-    networks:
-      - pasidnet
-
   service2_1:
     build:
       context: ./src/service2_1
@@ -42,6 +7,11 @@ services:
       - "5301:5301"
     networks:
       - pasidnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5301/health"]
+      interval: 20s
+      timeout: 2s
+      retries: 10
 
   service2_2:
     build:
@@ -49,6 +19,50 @@ services:
     container_name: service2_2
     ports:
       - "5302:5302"
+    networks:
+      - pasidnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5302/health"]
+      interval: 20s
+      timeout: 2s
+      retries: 10
+
+  lb1:
+    build:
+      context: ./src/load_balancer1
+    container_name: lb1
+    ports:
+      - "5101:5101"
+    networks:
+      - pasidnet
+    depends_on:
+      service2_1:
+        condition: service_healthy
+      service2_2:
+        condition: service_healthy
+
+  lb2:
+    build:
+      context: ./src/load_balancer2
+    container_name: lb2
+    ports:
+      - "5201:5201"
+    networks:
+      - pasidnet
+    depends_on:
+      service2_1:
+        condition: service_healthy
+      service2_2:
+        condition: service_healthy
+
+  source:
+    build:
+      context: ./src/source
+    container_name: source
+    depends_on:
+      - lb1
+    ports:
+      - "5000:5000"
     networks:
       - pasidnet
 

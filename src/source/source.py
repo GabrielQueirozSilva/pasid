@@ -3,6 +3,7 @@ import time
 import csv
 import socket
 import matplotlib.pyplot as plt
+import pandas as pd
 import os
 
 taxas = [1, 5, 10, 20]  # Requisições por segundo
@@ -50,9 +51,7 @@ def salvar_csv(taxa, dados):
             writer.writerow([taxa, mrt, d["t_envio"], d["t_recebido"]])
     return path
 
-def gerar_grafico(path_csv, taxa):
-    import pandas as pd
-
+def gerar_grafico_individual(path_csv, taxa):
     df = pd.read_csv(path_csv)
     plt.figure(figsize=(8, 5))
     plt.plot(df.index, df["mrt"], marker="o", label=f"{taxa} req/s")
@@ -65,11 +64,36 @@ def gerar_grafico(path_csv, taxa):
     plt.savefig(f"graficos/grafico_taxa_{taxa}.png")
     plt.close()
 
+def gerar_grafico_comparativo(mrts_por_taxa):
+    taxas = list(mrts_por_taxa.keys())
+    mrts = list(mrts_por_taxa.values())
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(taxas, mrts, marker='o', color='blue', linestyle='-')
+    plt.title("Tempo Médio de Resposta (MRT) por Taxa de Requisição")
+    plt.xlabel("Taxa de Requisições por Segundo")
+    plt.ylabel("MRT Médio (s)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("graficos/mrt_mensagens.png")
+    plt.close()
+    print("Gráfico comparativo salvo em: graficos/mrt_mensagens.png")
+
 if __name__ == "__main__":
     esperar_lb1()
+    mrts_por_taxa = {}
+
     for taxa in taxas:
         print(f"\nExecutando experimento para taxa {taxa} req/s...")
         dados = coletar_tempos(taxa)
         csv_path = salvar_csv(taxa, dados)
-        gerar_grafico(csv_path, taxa)
+        gerar_grafico_individual(csv_path, taxa)
+
+        # Calcular MRT médio para gráfico comparativo
+        df = pd.read_csv(csv_path)
+        mrt_medio = df["mrt"].mean()
+        mrts_por_taxa[taxa] = mrt_medio
+        print(f"MRT médio para {taxa} req/s: {mrt_medio:.4f}s")
+
+    gerar_grafico_comparativo(mrts_por_taxa)
     print("\nExperimentos concluídos! Gráficos salvos na pasta 'graficos'.")
